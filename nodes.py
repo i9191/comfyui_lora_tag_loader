@@ -3,6 +3,7 @@ import folder_paths
 import re
 
 # Import ComfyUI files
+import comfy.hooks
 import comfy.sd
 import comfy.utils
 
@@ -13,21 +14,28 @@ class LoraTagLoader:
 
     @classmethod
     def INPUT_TYPES(s):
-        return {"required": { "model": ("MODEL",),
-                              "clip": ("CLIP", ),
-                              "text": ("STRING", {"multiline": True}),
-                              }}
-    RETURN_TYPES = ("MODEL", "CLIP", "STRING")
-    RETURN_NAMES = ("MODEL", "CLIP", "STRING")
+        return {
+            "required": { 
+                "model": ("MODEL",),
+                "clip": ("CLIP", ),
+                "text": ("STRING", {"multiline": True}),
+            },
+            "optional": {
+                "prev_hooks": ("HOOKS",)
+            }
+        }
+    RETURN_TYPES = ("MODEL", "CLIP", "STRING", "HOOKS")
+    RETURN_NAMES = ("MODEL", "CLIP", "STRING", "HOOKS")
     FUNCTION = "load_lora"
 
     CATEGORY = "loaders"
 
-    def load_lora(self, model, clip, text):
-        # print(f"\nLoraTagLoader input text: { text }")
+    def load_lora(self, model, clip, text, prev_hooks: comfy.hooks.HookGroup=None):
+        if prev_hooks is None:
+            prev_hooks = comfy.hooks.HookGroup()
+        lora_hooks = prev_hooks.clone()
 
         founds = re.findall(self.tag_pattern, text)
-        # print(f"\nfoound lora tags: { founds }")
 
         if len(founds) < 1:
             return (model, clip, text)
@@ -84,8 +92,11 @@ class LoraTagLoader:
 
             model_lora, clip_lora = comfy.sd.load_lora_for_models(model_lora, clip_lora, lora, wModel, wClip)
 
+            fHook = comfy.hooks.create_hook_lora(lora=lora, strength_model=wModel, strength_clip=wClip)
+            lora_hooks = lora_hooks.clone_and_combine(fHook)
+
         plain_prompt = re.sub(self.tag_pattern, "", text)
-        return (model_lora, clip_lora, plain_prompt)
+        return (model_lora, clip_lora, plain_prompt, lora_hooks)
 
 NODE_CLASS_MAPPINGS = {
     "LoraTagLoader": LoraTagLoader,

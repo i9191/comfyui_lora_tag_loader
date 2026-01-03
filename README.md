@@ -8,6 +8,14 @@ The custom node shall extract "_**&lt;lora:CroissantStyle:0.8&gt;**_" from posit
 
 <img src="https://github.com/badjeff/comfyui_lora_tag_loader/blob/master/workflows/workflow_sample.png" width="720">
 
+## **Hook Support**
+
+This node supports ComfyUI’s hook system.
+
+* Accepts an optional **`HOOKS`** input
+* Creates a LoRA hook for each detected `<lora:...>` tag
+* Merges LoRA hooks with any incoming hooks instead of replacing them
+* Outputs the combined **`HOOKS`** group for downstream nodes
 
 ## **One More Thing:**
 Adding an extra weight shall being passed as the equivalent of strength_clip in Lora Loader.
